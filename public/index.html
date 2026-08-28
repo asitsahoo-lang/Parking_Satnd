@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ParkSmart Digital — Digital Parking Ticket & Payment Management</title>
+<style>
+  :root {
+    --primary: #1652f0;
+    --primary-dark: #0f3fc4;
+    --ink: #17203a;
+    --muted: #5b647a;
+    --bg: #f6f8fc;
+    --card: #ffffff;
+    --border: #e4e9f2;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+  }
+  header {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff;
+    padding: 64px 24px 72px;
+    text-align: center;
+  }
+  header .logo {
+    font-size: 15px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-bottom: 14px;
+  }
+  header h1 {
+    margin: 0 0 16px;
+    font-size: 40px;
+    font-weight: 800;
+  }
+  header p {
+    max-width: 640px;
+    margin: 0 auto;
+    font-size: 18px;
+    opacity: 0.95;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: -40px auto 0;
+    padding: 0 24px 80px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 32px 36px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 24px rgba(22, 82, 240, 0.06);
+  }
+  .card h2 {
+    margin-top: 0;
+    font-size: 22px;
+    color: var(--ink);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
+  }
+  .card p, .card li { color: var(--muted); font-size: 15.5px; }
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+  .feature {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .feature h3 {
+    margin: 0 0 6px;
+    font-size: 16px;
+    color: var(--ink);
+  }
+  .feature p { margin: 0; font-size: 14px; }
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+  }
+  .contact-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .contact-item .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary);
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .contact-item .value { font-size: 15px; color: var(--ink); font-weight: 500; }
+  footer {
+    text-align: center;
+    padding: 32px 24px;
+    color: var(--muted);
+    font-size: 13.5px;
+  }
+  footer a { color: var(--primary); text-decoration: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ParkSmart Digital</div>
+  <h1>Digital Parking Ticket &amp; Payment Management</h1>
+  <p>A centralized platform that replaces paper parking slips with electronic tickets, and lets parking stand operators collect fees securely via UPI.</p>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>About ParkSmart Digital</h2>
+    <p>
+      ParkSmart Digital is a digital parking management solution that replaces paper slips with
+      electronic tickets and allows parking stand operators to collect fees securely via UPI QR
+      codes and UPI payment links. The platform is built for parking stand agents to issue,
+      verify, and close tickets in real time, with automatic fee calculation and instant payment
+      confirmation — removing the need for cash handling or manual receipt books.
+    </p>
+    <p>
+      ParkSmart Digital operates as a centralized management system for multiple parking
+      locations and stands, operated by agents under a single business owner. Each location's
+      tickets, collections, and settlements are tracked in one place.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>How It Works</h2>
+    <div class="features">
+      <div class="feature">
+        <h3>1. Vehicle Entry</h3>
+        <p>An agent creates a digital ticket with a photo and entry time — no paper slip needed.</p>
+      </div>
+      <div class="feature">
+        <h3>2. Auto-Calculated Fee</h3>
+        <p>At exit, the parking duration and fee are calculated automatically — never entered manually.</p>
+      </div>
+      <div class="feature">
+        <h3>3. Secure UPI Payment</h3>
+        <p>Customers pay instantly via a live UPI QR code or a shareable payment link.</p>
+      </div>
+      <div class="feature">
+        <h3>4. Instant Ticket Closure</h3>
+        <p>The ticket closes automatically the moment payment is confirmed, with a full digital record.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Refund &amp; Cancellation Policy</h2>
+    <p>
+      Since the service (parking) is provided immediately upon payment at the exit, fees are
+      generally non-refundable once the ticket is closed. However, in cases of technical
+      double-deductions or payment failures where the amount is debited but the ticket remains
+      open, refunds will be processed back to the original payment method within 5–7 business days.
+    </p>
+    <p>
+      Customers who believe they have been incorrectly charged may reach out using the contact
+      details below, and our team will investigate and resolve the issue promptly.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Privacy Policy</h2>
+    <p>
+      ParkSmart Digital collects only the information necessary to operate its parking ticket and
+      payment system, including vehicle entry/exit details, ticket photos for verification
+      purposes, and payment transaction records. Payment processing is handled securely through
+      Razorpay, and ParkSmart Digital does not store any card, UPI, or bank account credentials on
+      its own servers.
+    </p>
+    <p>
+      Data collected is used solely for issuing tickets, calculating fees, processing payments,
+      and maintaining transaction records for accounting and support purposes. Information is not
+      sold or shared with third parties beyond what is required to process payments through our
+      payment gateway partner.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Terms of Service</h2>
+    <p>
+      By using ParkSmart Digital at any of our operated parking locations, customers agree to pay
+      the applicable parking fee, calculated based on the duration their vehicle is parked. Fees
+      are displayed prior to payment and are collected via UPI at the time of vehicle exit.
+      Parking stand operators and agents using this platform agree to accurately verify vehicles
+      before closing tickets and to use the payment collection features solely for legitimate
+      parking fee transactions.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Contact Us</h2>
+    <div class="contact-grid">
+      <div class="contact-item">
+        <div class="label">Business Name</div>
+        <div class="value">ParkSmart Digital</div>
+      </div>
+      <div class="contact-item">
+        <div class="label">Email</div>
+        <div class="value">asittsahoo2005@gmail.com</div>
+      </div>
+      <div class="contact-item">
+        <div class="label">Phone</div>
+        <div class="value">+91 78490 47603</div>
+      </div>
+      <div class="contact-item">
+        <div class="label">Address</div>
+        <div class="value">Patia, Bhubaneswar, Odisha, India – 751001</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  &copy; 2026 ParkSmart Digital. All rights reserved. &middot;
+  Payments securely processed via Razorpay.
+</footer>
+
+</body>
+</html>
