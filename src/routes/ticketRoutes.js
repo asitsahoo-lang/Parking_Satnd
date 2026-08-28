@@ -10,7 +10,7 @@ const {
   closeTicket,
   reopenTicket,
 } = require("../controllers/ticketController");
-const { createUpiQr, getUpiStatus, cancelUpiQr } = require("../controllers/paymentController");
+const { createUpiQr, getUpiStatus, cancelUpiQr, createPaymentLink, getPaymentLinkStatus, cancelPaymentLink } = require("../controllers/paymentController");
 
 // All ticket routes require a logged-in agent/owner
 router.use(requireAuth);
@@ -24,8 +24,14 @@ router.patch("/:id/close", closeTicket);
 router.patch("/:id/reopen", requireRole("owner", "manager"), reopenTicket);
 
 // ---- Real-time UPI payment (Razorpay) ----
+// ---- Real-time UPI payment (Razorpay QR Code API) ----
 router.post("/:id/upi/create", createUpiQr);
 router.get("/:id/upi/status", getUpiStatus);
 router.patch("/:id/upi/cancel", cancelUpiQr);
+
+// ---- Real-time UPI payment fallback (Razorpay Payment Links API) ----
+router.post("/:id/paymentlink/create", createPaymentLink);
+router.get("/:id/paymentlink/status", getPaymentLinkStatus);
+router.patch("/:id/paymentlink/cancel", cancelPaymentLink);
 
 module.exports = router;

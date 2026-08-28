@@ -137,4 +137,136 @@ async function cancelUpiQr(req, res) {
   }
 }
 
-module.exports = { createUpiQr, getUpiStatus, cancelUpiQr };
+// ---------------------------------------------------------------------------
+// FALLBACK PATH — Payment Links (upi_link) instead of the QR Code API.
+//
+// Same end result for the customer (scan a QR, pay via UPI), but built on
+// Razorpay's Payment Links product instead of the QR Code product, in case
+// QR Codes isn't API-enabled on this account yet. Razorpay gives us back a
+// short_url — we don't get a ready-made QR image this time, so the QR is
+// drawn client-side in Flutter (qr_flutter) from that URL. Scanning it opens
+// either the customer's UPI app directly (upi_link: true asks Razorpay to
+// prefer a UPI intent) or a Razorpay-hosted checkout page with UPI as an
+// option, depending on what app handles the scan.
+// ---------------------------------------------------------------------------
+
+// POST /api/tickets/:id/paymentlink/create
+async function createPaymentLink(req, res) {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    if (ticket.status === "CLOSED") {
+      return res.status(409).json({ error: "Ticket is already closed" });
+    }
+    if (ticket.paymentStatus === "PAID") {
+      return res.status(400).json({ error: "Ticket is already marked paid" });
+    }
+    if (ticket.paymentLink && ticket.paymentLink.status === "CREATED") {
+      return res.json({
+        linkId: ticket.paymentLink.linkId,
+        shortUrl: ticket.paymentLink.shortUrl,
+        amount: ticket.feeAmount,
+      });
+    }
+
+    const fee = calculateFee(ticket.entryTime, new Date());
+    ticket.feeAmount = fee.amount;
+
+    const razorpay = getRazorpayClient();
+    const expireBy = Math.floor(Date.now() / 1000) + 10 * 60;
+
+    const link = await razorpay.paymentLink.create({
+      upi_link: true,
+      amount: Math.round(fee.amount * 100),
+      currency: "INR",
+      accept_partial: false,
+      description: `Parking fee for ${ticket.plateNumber}`,
+      expire_by: expireBy,
+      notify: { sms: false, email: false },
+      reminder_enable: false,
+      notes: {
+        ticketId: ticket.ticketId,
+        plateNumber: ticket.plateNumber,
+      },
+    });
+
+    ticket.paymentLink = {
+      linkId: link.id,
+      shortUrl: link.short_url,
+      status: "CREATED",
+      amount: link.amount,
+      createdAt: new Date(),
+    };
+    ticket.audit.push({
+      action: "PAYMENT_LINK_CREATED",
+      agentId: req.user.loginId,
+      agentName: req.user.name,
+      note: `Razorpay Payment Link generated for amount ${fee.amount}`,
+    });
+    await ticket.save();
+
+    return res.status(201).json({
+      linkId: link.id,
+      shortUrl: link.short_url,
+      amount: fee.amount,
+      expiresAt: new Date(expireBy * 1000),
+    });
+  } catch (err) {
+    console.error("createPaymentLink error:", err);
+    return res.status(500).json({ error: "Failed to create payment link", details: err.message });
+  }
+}
+
+// GET /api/tickets/:id/paymentlink/status
+async function getPaymentLinkStatus(req, res) {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id }).select(
+      "paymentLink status paymentStatus exitTime exitAgentName"
+    );
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    return res.json({
+      linkStatus: ticket.paymentLink ? ticket.paymentLink.status : "NONE",
+      ticketStatus: ticket.status,
+      paymentStatus: ticket.paymentStatus,
+      closedAt: ticket.exitTime,
+      closedBy: ticket.exitAgentName,
+    });
+  } catch (err) {
+    console.error("getPaymentLinkStatus error:", err);
+    return res.status(500).json({ error: "Failed to fetch payment link status" });
+  }
+}
+
+// PATCH /api/tickets/:id/paymentlink/cancel
+async function cancelPaymentLink(req, res) {
+  try {
+    const ticket = await Ticket.findOne({ ticketId: req.params.id });
+    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+
+    if (ticket.paymentLink && ticket.paymentLink.status === "CREATED") {
+      try {
+        const razorpay = getRazorpayClient();
+        await razorpay.paymentLink.cancel(ticket.paymentLink.linkId);
+      } catch (e) {
+        console.warn("Razorpay payment link cancel warning:", e.message);
+      }
+      ticket.paymentLink.status = "CANCELLED";
+      ticket.audit.push({
+        action: "PAYMENT_LINK_CANCELLED",
+        agentId: req.user.loginId,
+        agentName: req.user.name,
+        note: "Agent cancelled payment link collection",
+      });
+      await ticket.save();
+    }
+
+    return res.json({ ticket });
+  } catch (err) {
+    console.error("cancelPaymentLink error:", err);
+    return res.status(500).json({ error: "Failed to cancel payment link" });
+  }
+}
+
+module.exports = { createUpiQr, getUpiStatus, cancelUpiQr, createPaymentLink, getPaymentLinkStatus, cancelPaymentLink };

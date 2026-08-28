@@ -86,6 +86,21 @@ const ticketSchema = new mongoose.Schema(
       createdAt: { type: Date },
     },
 
+        // ---- Fallback: Razorpay Payment Links (upi_link), used if the QR Code
+    // API isn't API-enabled on this account. Same idea, different product. ----
+    paymentLink: {
+      linkId: { type: String },
+      shortUrl: { type: String },
+      status: {
+        type: String,
+        enum: ["NONE", "CREATED", "PAID", "EXPIRED", "CANCELLED"],
+        default: "NONE",
+      },
+      paymentId: { type: String },
+      amount: { type: Number }, // paise
+      createdAt: { type: Date },
+    },
+
     // ---- Entry ----
     entryAgentId: { type: String, required: true }, // loginId
     entryAgentName: { type: String, required: true },

@@ -320,13 +320,19 @@ async function closeTicket(req, res) {
       });
     }
 
-    // If a Razorpay UPI QR is currently active for this ticket, the customer
-    // may complete it while the agent is also standing here — don't let a
-    // manual "cash" close race a payment that's mid-flight. Agent must
-    // cancel the UPI attempt first (see cancelUpiQr) before closing another way.
+      // If a Razorpay UPI QR or Payment Link is currently active for this
+    // ticket, the customer may complete it while the agent is also
+    // standing here — don't let a manual "cash" close race a payment
+    // that's mid-flight. Agent must cancel it first (see cancelUpiQr /
+    // cancelPaymentLink) before closing another way.
     if (ticket.upi && ticket.upi.status === "CREATED") {
       return res.status(409).json({
         error: "A UPI payment QR is currently active for this ticket. Cancel it before closing manually.",
+      });
+    }
+    if (ticket.paymentLink && ticket.paymentLink.status === "CREATED") {
+      return res.status(409).json({
+        error: "A payment link is currently active for this ticket. Cancel it before closing manually.",
       });
     }
 

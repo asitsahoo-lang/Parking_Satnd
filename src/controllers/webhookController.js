@@ -41,57 +41,89 @@ async function handleRazorpayWebhook(req, res) {
     const event = req.body.event;
 
     // Acknowledge everything else with 200 so Razorpay doesn't keep retrying
-    // events we don't care about, but only act on the one we need.
-    if (event !== "qr_code.credited") {
-      return res.status(200).json({ received: true, ignored: event });
+    // events we don't care about, but only act on the ones we need.
+    if (event === "qr_code.credited") {
+      return await handleQrCredited(req, res);
+    }
+    if (event === "payment_link.paid") {
+      return await handlePaymentLinkPaid(req, res);
     }
 
-    const qrEntity = req.body.payload?.qr_code?.entity;
-    const paymentEntity = req.body.payload?.payment?.entity;
-
-    if (!qrEntity || !paymentEntity) {
-      console.warn("Razorpay webhook: qr_code.credited missing expected payload shape");
-      return res.status(200).json({ received: true, warning: "unexpected payload shape" });
-    }
-
-    const ticket = await Ticket.findOne({ "upi.qrId": qrEntity.id });
-    if (!ticket) {
-      console.warn(`Razorpay webhook: no ticket found for QR ${qrEntity.id}`);
-      return res.status(200).json({ received: true, warning: "no matching ticket" });
-    }
-
-    // Idempotency: Razorpay may retry webhook delivery. If we've already
-    // closed this ticket (e.g. from a previous delivery of this same
-    // event), just acknowledge without doing it twice.
-    if (ticket.status === "CLOSED") {
-      return res.status(200).json({ received: true, alreadyClosed: true });
-    }
-
-    ticket.upi.status = "PAID";
-    ticket.upi.paymentId = paymentEntity.id;
-
-    await finalizeTicketClose(ticket, {
-      paymentStatus: "PAID",
-      paymentMethod: "UPI",
-      // No agent physically tapped "close" here — payment confirmation
-      // itself is the trigger. Attribute it to whichever agent opened the
-      // QR in the first place (recorded in the UPI_QR_CREATED audit entry)
-      // by falling back to the entry agent if that's not resolvable here.
-      exitAgentId: ticket.exitAgentId || ticket.entryAgentId,
-      exitAgentName: ticket.exitAgentName || `${ticket.entryAgentName} (UPI auto-confirmed)`,
-      exitTime: new Date(),
-      auditNote: `UPI payment confirmed via Razorpay (payment ${paymentEntity.id}). Auto-closed.`,
-    });
-
-    console.log(`Ticket ${ticket.ticketId} auto-closed via Razorpay UPI payment ${paymentEntity.id}`);
-    return res.status(200).json({ received: true, ticketClosed: true });
+    return res.status(200).json({ received: true, ignored: event });
   } catch (err) {
     console.error("handleRazorpayWebhook error:", err);
-    // Still 200 unless it's truly our fault being down — Razorpay will
-    // retry on non-2xx, which is fine for transient errors, but an
-    // unhandled exception here shouldn't loop forever on a bad payload.
     return res.status(500).json({ error: "Webhook processing failed" });
   }
+}
+
+async function handleQrCredited(req, res) {
+  const qrEntity = req.body.payload?.qr_code?.entity;
+  const paymentEntity = req.body.payload?.payment?.entity;
+
+  if (!qrEntity || !paymentEntity) {
+    console.warn("Razorpay webhook: qr_code.credited missing expected payload shape");
+    return res.status(200).json({ received: true, warning: "unexpected payload shape" });
+  }
+
+  const ticket = await Ticket.findOne({ "upi.qrId": qrEntity.id });
+  if (!ticket) {
+    console.warn(`Razorpay webhook: no ticket found for QR ${qrEntity.id}`);
+    return res.status(200).json({ received: true, warning: "no matching ticket" });
+  }
+
+  if (ticket.status === "CLOSED") {
+    return res.status(200).json({ received: true, alreadyClosed: true });
+  }
+
+  ticket.upi.status = "PAID";
+  ticket.upi.paymentId = paymentEntity.id;
+
+  await finalizeTicketClose(ticket, {
+    paymentStatus: "PAID",
+    paymentMethod: "UPI",
+    exitAgentId: ticket.exitAgentId || ticket.entryAgentId,
+    exitAgentName: ticket.exitAgentName || `${ticket.entryAgentName} (UPI auto-confirmed)`,
+    exitTime: new Date(),
+    auditNote: `UPI QR payment confirmed via Razorpay (payment ${paymentEntity.id}). Auto-closed.`,
+  });
+
+  console.log(`Ticket ${ticket.ticketId} auto-closed via Razorpay UPI QR payment ${paymentEntity.id}`);
+  return res.status(200).json({ received: true, ticketClosed: true });
+}
+
+async function handlePaymentLinkPaid(req, res) {
+  const linkEntity = req.body.payload?.payment_link?.entity;
+  const paymentEntity = req.body.payload?.payment?.entity;
+
+  if (!linkEntity) {
+    console.warn("Razorpay webhook: payment_link.paid missing expected payload shape");
+    return res.status(200).json({ received: true, warning: "unexpected payload shape" });
+  }
+
+  const ticket = await Ticket.findOne({ "paymentLink.linkId": linkEntity.id });
+  if (!ticket) {
+    console.warn(`Razorpay webhook: no ticket found for payment link ${linkEntity.id}`);
+    return res.status(200).json({ received: true, warning: "no matching ticket" });
+  }
+
+  if (ticket.status === "CLOSED") {
+    return res.status(200).json({ received: true, alreadyClosed: true });
+  }
+
+  ticket.paymentLink.status = "PAID";
+  ticket.paymentLink.paymentId = paymentEntity ? paymentEntity.id : undefined;
+
+  await finalizeTicketClose(ticket, {
+    paymentStatus: "PAID",
+    paymentMethod: "UPI",
+    exitAgentId: ticket.exitAgentId || ticket.entryAgentId,
+    exitAgentName: ticket.exitAgentName || `${ticket.entryAgentName} (UPI auto-confirmed)`,
+    exitTime: new Date(),
+    auditNote: `Payment link confirmed via Razorpay${paymentEntity ? ` (payment ${paymentEntity.id})` : ""}. Auto-closed.`,
+  });
+
+  console.log(`Ticket ${ticket.ticketId} auto-closed via Razorpay payment link ${linkEntity.id}`);
+  return res.status(200).json({ received: true, ticketClosed: true });
 }
 
 module.exports = { handleRazorpayWebhook };
