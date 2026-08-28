@@ -12,6 +12,7 @@ const webhookRoutes = require("./routes/webhookRoutes");
 const { ticketPage } = require("./controllers/publicController");
 
 const app = express();
+app.set("trust proxy", 1);
 
 // ---- Core middleware ----
 app.use(helmet());
